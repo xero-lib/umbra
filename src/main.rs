@@ -8,17 +8,16 @@
 mod serial;
 
 #[cfg(test)]
-fn test_runner(tests: &[&dyn Fn()]) {
+fn test_runner(tests: &[&dyn Testable]) {
     println!("Running {} tests", tests.len());
     
     for test in tests {
-        test()
+        test.run()
     }
     exit_qemu(QemuExitCode::Success);
 }
 
 mod vga_buffer;
-
 
 use core::panic::PanicInfo;
 #[cfg(not(test))]
@@ -49,9 +48,7 @@ pub extern "C" fn _start() -> ! {
 
 #[test_case]
 fn default_assertion() {
-    serial_print!("Default assertion... ");
-    assert_eq!(0, 1);
-    serial_println!("[ok]");
+    assert_eq!(1, 1);
 }
 
 #[cfg(test)]
@@ -69,5 +66,22 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
     unsafe {
         let mut port = Port::new(0xf4);
         port.write(exit_code as u32);
+    }
+}
+
+#[cfg(test)]
+pub trait Testable {
+    fn run(&self) -> ();
+}
+
+#[cfg(test)]
+impl<T> Testable for T
+where
+    T: Fn(),
+{
+    fn run(&self) {
+        serial_print!("{}...\t", core::any::type_name::<T>()); // serial print test name
+        self(); // execute test fn
+        serial_println!("[ok]"); // if self did not panic, the test passed
     }
 }
