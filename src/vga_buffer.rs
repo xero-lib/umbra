@@ -95,7 +95,7 @@ impl Writer {
                         let mut num = 0u8;
                         for _ in 0..4 {
                             num <<= 1;
-                            num += rbyte & 1;
+                            num |= rbyte & 1;
                             rbyte >>= 1;
                         }
                         
