@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use volatile::Volatile;
-use core::fmt::{Write, Result};
+use core::fmt::{Write, Result, Arguments};
 use spin::Mutex;
 
 #[allow(dead_code)]
@@ -109,7 +109,7 @@ impl Writer {
 
     fn new_line(&mut self) {
         for row in 1..BUFFER_HEIGHT {
-            for col in 1..BUFFER_WIDTH {
+            for col in 0..BUFFER_WIDTH {
                 self.buffer.chars[row-1][col].write(self.buffer.chars[row][col].read())
             }
         }
@@ -148,4 +148,23 @@ pub fn print_test() {
     writer.write_byte(b'H');
     writer.write_string("ello");
     write!(writer, ", Umbra!").unwrap();
+}
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~ Macros ~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! println {
+    () => ($crate::print!("\n"));
+    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
+}
+
+#[doc(hidden)]
+pub fn _print(args: Arguments) {
+    WRITER.lock().write_fmt(args).unwrap();
 }
